@@ -9,6 +9,10 @@
 #include "BGTest.h"
 #include "CollisionTest.h" 
 
+//TO DO
+// Clean Up: Wall Class functions, functions for specific tasks
+// Look into external console
+
 float pointDist(int x1, int y1, int x2, int y2){
     int ay = y2 - y1;
     int ax = x2 - x1;
@@ -22,8 +26,40 @@ bool inBetween(int x, int lowR, int highR){
         } else return (false);
 }
 
+uint16 cen_x = 128;
+uint16 cen_y = 100;
+
+int bg_x = 0;
+int bg_y = 0;
+
+//angle calculation
+float hyp = 0;
+float adj = 0;
+float opp = 0;
+
+uint16 coll_x = 20;
+uint16 coll_y = 40;
+
+// initialize variables
+uint16_t kyHeld;
+touchPosition touch_pos;
+
+//angle variables global
+float32 ang = 0;
+float32 ang_rad = 0;
+int scale = 1 << 8;
+
 class wall {
         public:
+        //Collision check
+        bool collision() {
+                if (inBetween(cen_x - 16, this->x1, this->x2)){
+                        if (inBetween(cen_y + 16, this->y2, this->y1)){
+                                printf("Collision!!");
+                                return(true);
+                        } else return(false);
+                } else return(false);
+        };
    int x1;
    int x2;
    int y1;
@@ -38,41 +74,76 @@ class wall {
    }
 };
 
-uint16 cen_x = 128;
-uint16 cen_y = 100;
+//WALL DECLERATIONS
+wall wall0 (20, 100, 80, 30, 2);
 
-int bg_x = 0;
-int bg_y = 0;
+void angleCalculation() {
+//get hypotenuse length with point dist
+        hyp = pointDist(cen_x, cen_y, touch_pos.px, touch_pos.py);
+//get x distance with Xpos - touch_pos.px
+        adj = touch_pos.px - cen_x;
+//gets y distance for movement
+        opp = touch_pos.py - cen_y;
+//Calculate angle a -> INVcos(x_dis/hypLen)
+//Speed vector at a starting at center
+        ang = acos(adj/(hyp * 1.0)); 
+        ang_rad = degreesToAngle(ang*(180/M_PI) - 90);
+//Update console message
+        printf("opp = [%d]\n", opp);
+        printf("adj [%d]\n", adj);
+}
 
-//angle calculation
-s16 hyp = 0;
-s16 adj = 0;
-s16 opp = 0;
+void graphicsUpdate() {
 
-//Collision check
-bool wallCol(wall wallN) {
-        if (inBetween(cen_x - 16, wallN.x1, wallN.x2)){
-        if (inBetween(cen_y + 16, wallN.y2, wallN.y1)){
-                printf("Collision!!");
-                return(true);
-        } else return(false);
-                } else return(false);
-};
+    s32 adjacentSpeed = (adj/7);
+    s32 oppositeSpeed = (opp/7);
 
-uint16 coll_x = 20;
-uint16 coll_y = 40;
+//**Enemy Collision check**
+        if (pointDist(coll_x, coll_y, cen_x, cen_y) <= 32){
+                    adjacentSpeed /= 2;
+                    oppositeSpeed /= 2;
+                printf("Colliding");
+        };
+
+
+        // !! Detect Touch Input !!
+        if (kyHeld & KEY_TOUCH){
+                touchRead(&touch_pos);
+                angleCalculation();
+
+//BACKGROUND Movement
+        bg_x -= adjacentSpeed;
+        coll_x += adjacentSpeed;
+        wall0.x1 += adjacentSpeed;
+        wall0.x2 += adjacentSpeed;
+
+        bg_y -= oppositeSpeed;
+        coll_y += oppositeSpeed;
+        wall0.y1 += oppositeSpeed;
+        wall0.y2 += oppositeSpeed;
+
+                if (wall0.collision()) { //CANCEL movement if collision detected
+                bg_y += oppositeSpeed;
+                coll_y -= oppositeSpeed;
+                wall0.y1 -= oppositeSpeed;
+                wall0.y2 -= oppositeSpeed;
+                printf("moving");
+                };
+        }
+
+        //Refresh visuals
+        bgUpdate();
+        scanKeys();
+        oamUpdate(&oamMain);
+
+        };
+
+        
+
 
 //**MAIN **//
 
-int main(int argc, char *argv[]){
-// initialize variables
-uint16_t kyHeld;
-touchPosition touch_pos;
-
-//angle variables global
-float32 ang = 0;
-float32 ang_rad = 0;
-int scale = 1 << 8;
+int main(int argc, char *argv[]){ 
 
 
 videoSetMode(MODE_1_2D);
@@ -148,78 +219,22 @@ oamSet(&oamMain, 1,
         false,
         true, false,
         true);
+        while(1){ //This is just an infinite loop, until something stops it
+                swiWaitForVBlank();
+        //Background Initalization
+                bgSetScroll(bg, bg_x, bg_y);
+                bgSetScroll(Col, bg_x/2, bg_y/2);
+                //bgSetScroll(bgSb, bg_x, bg_y - 192);
 
-//WALL DECLERATIONS
-wall wall0 (20, 100, 80, 30, 2);
+        //Graphics manipulation
+                oamRotateScale(&oamMain, 0, -ang_rad, scale, scale);
+                oamSetXY(&oamMain, 1, coll_x, coll_y);
+                kyHeld = keysHeld();
 
-while(1){ //This is just an infinite loop, until something stops it
-    swiWaitForVBlank();
-//Background Initalization
-    bgSetScroll(bg, bg_x, bg_y);
-    bgSetScroll(Col, bg_x/2, bg_y/2);
-    //bgSetScroll(bgSb, bg_x, bg_y - 192);
-
-//graphics manipulation
-    oamRotateScale(&oamMain, 0, -ang_rad, scale, scale);
-    oamSetXY(&oamMain, 1, coll_x, coll_y);
-    kyHeld = keysHeld();
-
-// !! Detect Touch Input !!
-    if (kyHeld & KEY_TOUCH){
-        touchRead(&touch_pos);
-
-// !! angleCalculation !!
-
-//get hypotenuse length with point dist
-        s16 hyp = pointDist(cen_x, cen_y, touch_pos.px, touch_pos.py);
-//get x distance with Xpos - touch_pos.px
-        s16 adj = touch_pos.px - cen_x;
-//gets y distance for movement
-        s16 opp = touch_pos.py - cen_y;
-//Calculate angle a -> INVcos(x_dis/hypLen)
-//Speed vector at a starting at center
-        ang = acos(adj/(hyp * 1.0)); 
-        ang_rad = degreesToAngle(ang*(180/M_PI) - 90);
-//Update console message
-        printf("opp = [%d]\n", opp);
-        printf("adj [%d]\n", adj);
-//**Collision check**
-        if (pointDist(coll_x, coll_y, cen_x, cen_y) <= 32){
-                    adj /= 2;
-                    opp /= 2;
-                printf("Colliding");
-        };
-
-//BACKGROUND Movement
-        bg_x -= (adj/7);
-        coll_x += (adj/7);
-        wall0.x1 += (adj/7);
-        wall0.x2 += (adj/7);
-
-        bg_y -= (opp/7);
-        coll_y += (opp/7);
-        wall0.y1 += (opp/7);
-        wall0.y2 += (opp/7);
-
-        if (wallCol(wall0)) {
-                bg_y += (opp/7);
-                coll_y -= (opp/7);
-                wall0.y1 -= (opp/7);
-                wall0.y2 -= (opp/7);
-                printf("moving");
-                };
-        }
-//Refresh visuals
-        bgUpdate();
-        scanKeys();
-        oamUpdate(&oamMain);
-        
-
-
-    };
-
+                graphicsUpdate();
     //flush visuals
-    oamFreeGfx(&oamMain, gfxMain);
-    consoleClear();
+        oamFreeGfx(&oamMain, gfxMain);
+        consoleClear();
 
+        };
 };
