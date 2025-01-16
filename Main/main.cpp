@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <math.h>
 #include <nds.h>
@@ -49,8 +48,23 @@ float32 ang = 0;
 float32 ang_rad = 0;
 int scale = 1 << 8;
 
-class wall {
-        public:
+class wallClass {
+public:
+        int x1;
+        int x2;
+        int y1;
+        int y2;
+        int dir;
+       int wallPoints(int x, int xx, int y, int yy, int d) { 
+        this->x1 = x;
+        this->x2 = xx;
+        this->y1 = y;
+        this->y2 = yy;
+        this->dir = d;
+
+        return (0);
+        }
+
         //Collision check
         bool collision() {
                 if (inBetween(cen_x - 16, this->x1, this->x2)){
@@ -60,22 +74,17 @@ class wall {
                         } else return(false);
                 } else return(false);
         };
-   int x1;
-   int x2;
-   int y1;
-   int y2;
-   int dir;
-       wall(int x, int xx, int y, int yy, int d) {
-        x1 = x;
-        x2 = xx;
-        y1 = y;
-        y2 = yy;
-        dir = d;
-   }
 };
 
-//WALL DECLERATIONS
-wall wall0 (20, 100, 80, 30, 2);
+//established wall array as well as an array of coordinate points for the wall objects
+
+wallClass walls1[2];
+
+int Test0[2][5]{
+        {0, 256, 30, 0, 2},
+        {20, 100, 80, 30, 2}
+};
+
 
 void angleCalculation() {
 //get hypotenuse length with point dist
@@ -91,7 +100,7 @@ void angleCalculation() {
 //Update console message
         printf("opp = [%d]\n", opp);
         printf("adj [%d]\n", adj);
-}
+};
 
 void graphicsUpdate() {
 
@@ -114,22 +123,33 @@ void graphicsUpdate() {
 //BACKGROUND Movement
         bg_x -= adjacentSpeed;
         coll_x += adjacentSpeed;
-        wall0.x1 += adjacentSpeed;
-        wall0.x2 += adjacentSpeed;
+
 
         bg_y -= oppositeSpeed;
         coll_y += oppositeSpeed;
-        wall0.y1 += oppositeSpeed;
-        wall0.y2 += oppositeSpeed;
 
-                if (wall0.collision()) { //CANCEL movement if collision detected
-                bg_y += oppositeSpeed;
-                coll_y -= oppositeSpeed;
-                wall0.y1 -= oppositeSpeed;
-                wall0.y2 -= oppositeSpeed;
-                printf("moving");
+
+        for (int i = 0; i <= 1; i++){
+                walls1[i].x1 += adjacentSpeed;
+                walls1[i].x2 += adjacentSpeed;
+
+                walls1[i].y1 += oppositeSpeed;
+                walls1[i].y2 += oppositeSpeed;
+
+                if (walls1[i].collision()) { //CANCEL movement if collision detected
+                        bg_y += oppositeSpeed;
+                        coll_y -= oppositeSpeed;
+                        for (int b = 0; b <= 1; b++){
+                                walls1[b].y1 -= oppositeSpeed;
+                                walls1[b].y2 -= oppositeSpeed;
+                        }
+
                 };
-        }
+
+        };
+}
+
+
 
         //Refresh visuals
         bgUpdate();
@@ -219,6 +239,11 @@ oamSet(&oamMain, 1,
         false,
         true, false,
         true);
+
+               walls1[0].wallPoints(Test0[0][0], Test0[0][1], Test0[0][2], Test0[0][3], Test0[0][4]);
+               walls1[1].wallPoints(Test0[1][0], Test0[1][1], Test0[1][2], Test0[1][3], Test0[1][4]);
+
+
         while(1){ //This is just an infinite loop, until something stops it
                 swiWaitForVBlank();
         //Background Initalization
