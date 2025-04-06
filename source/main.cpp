@@ -490,8 +490,6 @@ oamSet(&oamMain, i,
         false);
 }
 
-//originOffset(485, 885, levelTest);
-
         while(true){ //This is just an infinite loop, until something stops it
 
                 //Check for level select id
@@ -499,12 +497,12 @@ oamSet(&oamMain, i,
                         if (walls1[0].collisionTouch()){
                                 bgClearControlBits(bgMenu, REG_BG0CNT);
                                 levelSetup(levelTest);
-
+                                originOffset(485, 885, levelTest);
                         }
                         if (walls1[1].collisionTouch()){
                                 bgClearControlBits(bgMenu, REG_BG0CNT);
                                 levelSetup(levelQuiz);
-
+                                originOffset(485, 885, levelQuiz);
                         } 
                 }
 
